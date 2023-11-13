@@ -66,22 +66,27 @@ public class WSInferUtils {
                     cachedModelCollection = downloadModelCollection();
             }
         }
-        String localModelDirectory = WSInferPrefs.localDirectoryProperty().get();
-        if (localModelDirectory != null) {
+        Path localModelDirectory = Path.of(WSInferPrefs.modelDirectoryProperty().get(), "user");
+        if (Files.exists(localModelDirectory) && Files.isDirectory(localModelDirectory)) {
+            logger.info("Trying to add local models from dir: {}", localModelDirectory);
             addLocalModels(cachedModelCollection, localModelDirectory);
         }
         return cachedModelCollection;
     }
 
-    private static void addLocalModels(WSInferModelCollection cachedModelCollection, String localModelDirectory) {
-        File modelDir = new File(localModelDirectory);
-        if (!modelDir.exists() || !modelDir.isDirectory()) {
+    private static void addLocalModels(WSInferModelCollection cachedModelCollection, Path localModelDirectory) {
+        if (!Files.exists(localModelDirectory) || !Files.isDirectory(localModelDirectory)) {
+            logger.debug("Not a directory that exists {}", localModelDirectory);
             return;
         }
-        for (var model: Objects.requireNonNull(modelDir.listFiles())) {
-            if (model.isDirectory()) {
+        try (var stream = Files.list(localModelDirectory)) {
+            var paths = stream.toList();
+            for (var path: paths) {
                 try {
-                    var localModel = WSInferModelLocal.createInstance(model);
+                    if (!Files.isDirectory(path)) {
+                        continue;
+                    }
+                    var localModel = WSInferModelLocal.createInstance(path);
                     if (cachedModelCollection.getModels().put(localModel.getName(), localModel) != null) {
                         logger.warn("Replaced model {} with local version", localModel.getName());
                     } else {
@@ -95,6 +100,8 @@ public class WSInferUtils {
                     logger.warn(e.getMessage(), e);
                 }
             }
+        } catch (IOException e) {
+            logger.warn(e.getMessage(), e);
         }
     }
 

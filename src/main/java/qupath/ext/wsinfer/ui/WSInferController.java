@@ -273,8 +273,6 @@ public class WSInferController {
 
     private void configureModelDirectory() {
         tfModelDirectory.textProperty().bindBidirectional(WSInferPrefs.modelDirectoryProperty());
-        localModelDirectory.textProperty().bindBidirectional(WSInferPrefs.localDirectoryProperty());
-        localModelDirectory.textProperty().addListener((v, o, n) -> configureModelChoices());
     }
 
     private void configureNumWorkers() {
@@ -379,10 +377,6 @@ public class WSInferController {
         promptToUpdateDirectory(WSInferPrefs.modelDirectoryProperty());
     }
 
-    public void promptForLocalModelDirectory() {
-        promptToUpdateDirectory(WSInferPrefs.localDirectoryProperty());
-    }
-
     private void promptToUpdateDirectory(StringProperty dirPath) {
         var modelDirPath = dirPath.get();
         var dir = modelDirPath == null || modelDirPath.isEmpty() ? null : new File(modelDirPath);
@@ -401,7 +395,7 @@ public class WSInferController {
         dirPath.set(newDir.getAbsolutePath());
     }
 
-    public void showInfo() throws IOException {
+    public void showInfo() {
         if (infoPopover.isShowing()) {
             infoPopover.hide();
             return;

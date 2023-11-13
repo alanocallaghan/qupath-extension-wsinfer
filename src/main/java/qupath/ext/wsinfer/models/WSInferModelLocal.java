@@ -18,6 +18,8 @@ package qupath.ext.wsinfer.models;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -25,7 +27,7 @@ import java.util.ResourceBundle;
 
 public class WSInferModelLocal extends WSInferModel {
 
-    private final File modelDirectory;
+    private final Path modelDirectory;
     private static final ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.wsinfer.ui.strings");
 
     /**
@@ -35,25 +37,27 @@ public class WSInferModelLocal extends WSInferModel {
      * @return A {@link WSInferModel} if the directory supplied is valid,
      * otherwise nothing.
      */
-    public static WSInferModelLocal createInstance(File modelDirectory) throws IOException {
+    public static WSInferModelLocal createInstance(Path modelDirectory) throws IOException {
         return new WSInferModelLocal(modelDirectory);
     }
 
-    private WSInferModelLocal(File modelDirectory) throws IOException {
+    private WSInferModelLocal(Path modelDirectory) throws IOException {
         this.modelDirectory = modelDirectory;
-        this.hfRepoId = modelDirectory.getName();
-        List<File> files = Arrays.asList(Objects.requireNonNull(modelDirectory.listFiles()));
-        if (!files.contains(getConfigFile())) {
-            throw new IOException(resources.getString("error.localModel") + ": " + getConfigFile().toString());
-        }
-        if (!files.contains(getTorchScriptFile())) {
-            throw new IOException(resources.getString("error.localModel") + ": " + getTorchScriptFile().toString());
+        this.hfRepoId = modelDirectory.getFileName().toString();
+        try (var stream = Files.list(modelDirectory)) {
+            var files = stream.toList();
+            if (!files.contains(getConfigFile().toPath())) {
+                throw new IOException(resources.getString("error.localModel") + ": " + getConfigFile().toString());
+            }
+            if (!files.contains(getTorchScriptFile().toPath())) {
+                throw new IOException(resources.getString("error.localModel") + ": " + getTorchScriptFile().toString());
+            }
         }
     }
 
     @Override
     File getModelDirectory() {
-        return this.modelDirectory;
+        return this.modelDirectory.toFile();
     }
 
     @Override
